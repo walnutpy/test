@@ -1,0 +1,38 @@
+name: CD - Build & Push to Docker Hub
+
+# main 브랜치에 push 혹은 태그 생성 시 동작
+on:
+  push:
+    branches: [ main ]
+    # 태그(push)를 이용해 버전 릴리스할 수도 있습니다
+    tags: [ 'v*.*.*' ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1) 코드 체크아웃
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      # 2) Docker Hub 로그인
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 3) 이미지 빌드 & 태그 & 푸시
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/myflask:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/myflask:${{ github.sha }}
+
+      # 4) 정리(선택)
+      - name: Log out from Docker Hub
+        run: docker logout
