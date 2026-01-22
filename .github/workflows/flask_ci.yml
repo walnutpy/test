@@ -1,4 +1,4 @@
-name: Flask CI Pipeline
+name: CI with Docker & Docker Compose
 
 on:
   push:
@@ -7,20 +7,23 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  build-and-test:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: Install dependencies
+      - name: Build & start services
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          docker compose up -d --build
+          # give the app a moment to start
+          sleep 10
 
-      - name: Run tests
-        run: pytest
+      - name: Run test suite
+        run: |
+          docker compose exec web pytest
+
+      - name: Tear down
+        if: always()
+        run: docker compose down --volumes --remove-orphans
