@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  web:
+    image: ${DOCKERHUB_USERNAME}/myflask:latest
+    build: null
+    environment:
+      - FLASK_ENV=production
+    expose:
+      - "5000"
+    ports: []  # 외부 노출은 nginx가 담당
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d:ro
+    restart: unless-stopped

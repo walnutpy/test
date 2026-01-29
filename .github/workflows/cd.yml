@@ -36,3 +36,40 @@ jobs:
       # 4) 정리(선택)
       - name: Log out from Docker Hub
         run: docker logout
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      REMOTE_APP_DIR: ${{ secrets.REMOTE_APP_DIR }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Prepare SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.GCP_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.GCP_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Ensure remote dir exists
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.GCP_USER }}@${{ secrets.GCP_HOST }} "\
+            mkdir -p ${REMOTE_APP_DIR}"
+
+      - name: Copy files to VM (scp)
+        run: |
+          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r \
+            docker-compose.yml docker-compose.prod.yml nginx \
+            ${{ secrets.GCP_USER }}@${{ secrets.GCP_HOST }}:${REMOTE_APP_DIR}/
+
+      - name: Pull & restart on VM
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.GCP_USER }}@${{ secrets.GCP_HOST }} "\
+            set -euo pipefail; \
+            cd ${REMOTE_APP_DIR} && \
+            export DOCKERHUB_USERNAME=${DOCKERHUB_USERNAME} && \
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull && \
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans"
+
