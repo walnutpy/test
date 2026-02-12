@@ -140,7 +140,7 @@ jobs:
       LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL }}
       IMAGE_TAG: ${{ github.sha }}
       IMAGE_DIGEST: ${{ needs.build-and-push.outputs.image-digest }}
-      IMG: ${{ secrets.DOCKERHUB_USENAME }}/myflask@${{ needs.build-and-push.outputs.image-digest }}
+      IMG: ${{ secrets.DOCKERHUB_USERNAME }}/myflask@${{ needs.build-and-push.outputs.image-digest }}
 
     steps:
       - uses: actions/checkout@v4
