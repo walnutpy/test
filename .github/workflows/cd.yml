@@ -183,6 +183,7 @@ jobs:
             DOMAIN=${{ env.DOMAIN }}
             LETSENCRYPT_EMAIL=${{ env.LETSENCRYPT_EMAIL }}
             IMAGE_TAG=${{ env.IMAGE_TAG }}
+            IMAGE_REF=${{ env.IMG }}
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
             EOT
           EOF
