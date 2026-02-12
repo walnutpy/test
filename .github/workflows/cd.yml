@@ -192,7 +192,7 @@ jobs:
         run: |
           scp -o StrictHostKeyChecking=no nginx/default.http.conf.template \
             ${{ secrets.GCP_USER }}@${{ secrets.GCP_HOST }}:"${{ env.REMOTE_DIR }}/nginx/default.conf.template"
-          scp -o StrictHostKeyChecking=no docker-compose-prod.yml \
+          scp -o StrictHostKeyChecking=no docker-compose.prod.yml \
             ${{ secrets.GCP_USER }}@${{ secrets.GCP_HOST }}:"${{ env.REMOTE_DIR }}/"
 
       # ── 3. 스택 기동 (80) ───────────────────────────────────────────────
@@ -200,8 +200,8 @@ jobs:
         run: |
           ssh ${{ secrets.GCP_USER }}@${{ secrets.GCP_HOST }} "
             cd '${{ env.REMOTE_DIR }}' &&
-            docker compose -f docker-compose-prod.yml down --remove-orphans || true &&
-            docker compose -f docker-compose-prod.yml up -d nginx web
+            docker compose -f docker-compose.prod.yml down --remove-orphans || true &&
+            docker compose -f docker-compose.prod.yml up -d nginx web
           "
 
       # ── 4. HTTP 응답 대기 ───────────────────────────────────────────────
@@ -219,7 +219,7 @@ jobs:
         run: |
           ssh ${{ secrets.GCP_USER }}@${{ secrets.GCP_HOST }} "
             cd '${{ env.REMOTE_DIR }}' &&
-            docker compose -f docker-compose-prod.yml run --rm certbot \
+            docker compose -f docker-compose.prod.yml run --rm certbot \
               certonly --webroot -w /var/www/certbot \
               --non-interactive --keep-until-expiring \
               --email '${{ env.LETSENCRYPT_EMAIL }}' -d '${{ env.DOMAIN }}' \
@@ -231,7 +231,7 @@ jobs:
         run: |
           ssh ${{ secrets.GCP_USER }}@${{ secrets.GCP_HOST }} <<'EOF'
             cd '${{ env.REMOTE_DIR }}'
-            docker compose -f docker-compose-prod.yml run --rm --entrypoint "" certbot sh -euxc '
+            docker compose -f docker-compose.prod.yml run --rm --entrypoint "" certbot sh -euxc '
               OPTIONS=/etc/letsencrypt/options-ssl-nginx.conf
               DHPARAM=/etc/letsencrypt/ssl-dhparams.pem
 
@@ -279,7 +279,7 @@ jobs:
         run: |
           ssh ${{ secrets.GCP_USER }}@${{ secrets.GCP_HOST }} <<'EOF'
             cd '${{ env.REMOTE_DIR }}' &&
-            docker compose -f docker-compose-prod.yml exec nginx sh -c '
+            docker compose -f docker-compose.prod.yml exec nginx sh -c '
               # 모든 환경변수 치환 (여기선 DOMAIN)
               envsubst '\''$DOMAIN'\'' \
                 < /etc/nginx/templates/default.conf.template \
@@ -293,8 +293,8 @@ jobs:
         run: |
           ssh ${{ secrets.GCP_USER }}@${{ secrets.GCP_HOST }} "
             cd '${{ env.REMOTE_DIR }}' &&
-            docker compose -f docker-compose-prod.yml pull &&
-            docker compose -f docker-compose-prod.yml up -d --remove-orphans
+            docker compose -f docker-compose.prod.yml pull &&
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
           "
 
       # ── 10. HTTPS 검증 ──────────────────────────────────────────────────
