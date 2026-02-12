@@ -3,7 +3,9 @@ FROM python:3.10-slim
 # 작업 디렉터리
 WORKDIR /app
 
-RUN python -m pip install --upgrade pip setuptools==78.1.1 wheel
+RUN python -m pip install --upgrade pip \
+ && pip install --no-cache-dir --upgrade "setuptools>=82.0.0" "wheel>=0.46.2"
+
 # 의존성 설치
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
