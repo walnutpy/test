@@ -57,7 +57,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     entrypoint: >
       sh -c "while true; do
-        certbot renew --quiet --deploy-hook 'docker exec nginx nginx -s reload';
+        certbot renew --quiet --deploy-hook 'docker exec nginx nginx -s reload || true';
         sleep 12h;
       done"
     restart: unless-stopped
