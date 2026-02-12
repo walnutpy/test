@@ -280,7 +280,7 @@ jobs:
           ssh ${{ secrets.GCP_USER }}@${{ secrets.GCP_HOST }} <<'EOF'
             cd '${{ env.REMOTE_DIR }}'
             docker compose -f docker-compose.prod.yml run --rm --no-deps --entrypoint sh nginx -ec '
-              envsubst < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf
+              envsubst '$DOMAIN' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf
               nginx -t
             '
             docker compose -f docker-compose.prod.yml up -d --force-recreate nginx
