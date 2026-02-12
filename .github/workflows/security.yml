@@ -1,0 +1,196 @@
+name: Security – SAST & SCA
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write     # SARIF 업로드
+      pull-requests: write       # (선택) PR 코멘트용
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0         # gitleaks가 히스토리 스캔 가능
+
+      - name: Ensure jq for SARIF checks
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y jq
+
+      # ──────────────────────────────
+      # Python tooling
+      # ──────────────────────────────
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install security tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install semgrep bandit pip-audit
+
+      # ──────────────────────────────
+      # Semgrep (SAST)
+      # ──────────────────────────────
+      - name: Semgrep (OWASP + Python)
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          semgrep ci --config p/owasp-top-ten --config p/python --sarif -o semgrep.sarif || true
+
+      - name: Check Semgrep SARIF has results
+        id: semgrep_sarif_check
+        run: |
+          if [ ! -s semgrep.sarif ]; then
+            echo "ok=false" >> $GITHUB_OUTPUT; exit 0
+          fi
+          runs=$(jq '.runs | length' semgrep.sarif 2>/dev/null || echo 0)
+          results=$(jq '[.runs[].results] | flatten | length' semgrep.sarif 2>/dev/null || echo 0)
+          if [ "$runs" -gt 0 ] && [ "$results" -gt 0 ]; then echo "ok=true" >> $GITHUB_OUTPUT; else echo "ok=false" >> $GITHUB_OUTPUT; fi
+
+      - name: Upload Semgrep SARIF
+        if: ${{ steps.semgrep_sarif_check.outputs.ok == 'true' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+
+      # ──────────────────────────────
+      # Bandit (Python SAST)
+      # ──────────────────────────────
+      - name: Bandit
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          bandit -r . -f sarif -o bandit.sarif || true
+
+      - name: Check Bandit SARIF has results
+        id: bandit_sarif_check
+        run: |
+          if [ ! -s bandit.sarif ]; then
+            echo "ok=false" >> $GITHUB_OUTPUT; exit 0
+          fi
+          runs=$(jq '.runs | length' bandit.sarif 2>/dev/null || echo 0)
+          results=$(jq '[.runs[].results] | flatten | length' bandit.sarif 2>/dev/null || echo 0)
+          if [ "$runs" -gt 0 ] && [ "$results" -gt 0 ]; then echo "ok=true" >> $GITHUB_OUTPUT; else echo "ok=false" >> $GITHUB_OUTPUT; fi
+
+      - name: Upload Bandit SARIF
+        if: ${{ steps.bandit_sarif_check.outputs.ok == 'true' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: bandit.sarif
+
+      # ──────────────────────────────
+      # pip-audit (deps CVE) – 리포트 모드
+      # ──────────────────────────────
+      - name: pip-audit
+        timeout-minutes: 5
+        run: |
+          if [ -f requirements.txt ]; then
+            pip-audit -r requirements.txt --strict || true
+          fi
+
+      # ──────────────────────────────
+      # Hadolint (Dockerfile Lint) — 래퍼 액션 대신 컨테이너 CLI로 실행 (멈춤 방지)
+      # ──────────────────────────────
+      - name: Locate Dockerfile(s)
+        id: df
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(find . -type f \( -iname "dockerfile" -o -iname "*.dockerfile" \) | sort || true)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "count=0"     >> $GITHUB_OUTPUT
+            echo "No Dockerfile found. Skipping hadolint."
+            exit 0
+          fi
+          printf '%s\n' "${files[@]}" > dockerfiles.list
+          echo "found=true"           >> $GITHUB_OUTPUT
+          echo "count=${#files[@]}"   >> $GITHUB_OUTPUT
+          echo "Found Dockerfiles:"; cat dockerfiles.list
+
+      - name: Run hadolint (container CLI)
+        if: ${{ steps.df.outputs.found == 'true' }}
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t files < dockerfiles.list
+          echo "Linting: ${files[*]}"
+          docker run --rm -v "$PWD":/work -w /work hadolint/hadolint:latest \
+            hadolint --format sarif "${files[@]}" > hadolint.sarif || true
+          test -s hadolint.sarif || echo '{"version":"2.1.0","runs":[]}' > hadolint.sarif
+          ls -l hadolint.sarif
+
+      - name: Check Hadolint SARIF has results
+        if: ${{ steps.df.outputs.found == 'true' }}
+        id: hadolint_sarif_check
+        run: |
+          if [ ! -s hadolint.sarif ]; then
+            echo "ok=false" >> $GITHUB_OUTPUT; exit 0
+          fi
+          runs=$(jq '.runs | length' hadolint.sarif 2>/dev/null || echo 0)
+          results=$(jq '[.runs[].results] | flatten | length' hadolint.sarif 2>/dev/null || echo 0)
+          if [ "$runs" -gt 0 ] && [ "$results" -gt 0 ]; then echo "ok=true" >> $GITHUB_OUTPUT; else echo "ok=false" >> $GITHUB_OUTPUT; fi
+
+      - name: Upload Hadolint SARIF
+        if: ${{ steps.df.outputs.found == 'true' && steps.hadolint_sarif_check.outputs.ok == 'true' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: hadolint.sarif
+
+      # ──────────────────────────────
+      # Trivy (filesystem scan)
+      # ──────────────────────────────
+      - name: Trivy filesystem scan
+        timeout-minutes: 15
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+          format: sarif
+          output: trivy-fs.sarif
+          exit-code: '0'   # 게이트로 쓰려면 '1'
+
+      - name: Check Trivy SARIF has results
+        id: trivyfs_sarif_check
+        run: |
+          if [ ! -s trivy-fs.sarif ]; then
+            echo "ok=false" >> $GITHUB_OUTPUT; exit 0
+          fi
+          runs=$(jq '.runs | length' trivy-fs.sarif 2>/dev/null || echo 0)
+          results=$(jq '[.runs[].results] | flatten | length' trivy-fs.sarif 2>/dev/null || echo 0)
+          if [ "$runs" -gt 0 ] && [ "$results" -gt 0 ]; then echo "ok=true" >> $GITHUB_OUTPUT; else echo "ok=false" >> $GITHUB_OUTPUT; fi
+
+      - name: Upload Trivy SARIF
+        if: ${{ steps.trivyfs_sarif_check.outputs.ok == 'true' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs.sarif
+
+      # ──────────────────────────────
+      # Gitleaks (Secrets)
+      #  - v2 액션은 PR 스캔에 GITHUB_TOKEN 필요
+      # ──────────────────────────────
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITLEAKS_CONFIG: .gitleaks.toml
+          # GITLEAKS_ENABLE_COMMENTS: "true"
+          # GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "true"
+          # GITLEAKS_ENABLE_SUMMARY: "true"
