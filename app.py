@@ -21,19 +21,25 @@ PUSH_TOKEN = os.environ.get("PUSH_TOKEN")
 if not PUSH_TOKEN:
     raise RuntimeError("PUSH_TOKEN not set")
 
+DB_PATH = os.environ.get("CANDLES_DB_PATH", "candles.db")
+
+PUSH_TOKEN = os.environ.get("PUSH_TOKEN")
+if not PUSH_TOKEN:
+    raise RuntimeError("PUSH_TOKEN not set")
+
 def init_db():
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("""
+    cur = conn.cursor()
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS candles (
-            code TEXT,
-            timeframe TEXT,
-            t TEXT,
-            o REAL,
-            h REAL,
-            l REAL,
-            c REAL,
-            v REAL,
+            code TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            t TEXT NOT NULL,
+            o REAL NOT NULL,
+            h REAL NOT NULL,
+            l REAL NOT NULL,
+            c REAL NOT NULL,
+            v REAL NOT NULL,
             PRIMARY KEY (code, timeframe, t)
         )
     """)
@@ -41,6 +47,7 @@ def init_db():
     conn.close()
 
 init_db()
+
 
 # ---------------------------------------------------------------------
 # Common
@@ -498,6 +505,41 @@ def api_stocks_search():
 
     return jsonify({"items": items})
 
+@app.post("/api/internal/push/candles")
+def push_candles():
+    token = request.headers.get("X-PUSH-TOKEN", "")
+    if token != PUSH_TOKEN:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    data = request.get_json(silent=True) or {}
+    code = (data.get("code") or "").strip()
+    candles = data.get("candles") or []
+
+    if not re.fullmatch(r"\d{6}", code):
+        return jsonify({"error": "code must be 6 digits"}), 400
+
+    if not isinstance(candles, list) or not candles:
+        return jsonify({"error": "candles must be a non-empty list"}), 400
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    for cndl in candles:
+        try:
+            t = cndl["t"]
+            o = float(cndl["o"]); h = float(cndl["h"]); l = float(cndl["l"]); c = float(cndl["c"]); v = float(cndl["v"])
+        except Exception:
+            continue
+
+        cur.execute("""
+            INSERT OR REPLACE INTO candles (code, timeframe, t, o, h, l, c, v)
+            VALUES (?, '1m', ?, ?, ?, ?, ?, ?)
+        """, (code, t, o, h, l, c, v))
+
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok"})
+
 
 @app.get("/api/stocks/candles")
 def api_stocks_candles():
@@ -508,52 +550,46 @@ def api_stocks_candles():
     if not re.fullmatch(r"\d{6}", code):
         return jsonify({"error": "code must be 6 digits"}), 400
 
-    # 프론트 tf -> 네이버 tf 매핑
-    # 네이버 siseJson은 day/week/month는 잘 맞는데, 분봉/틱봉은 여기서 못 뽑음.
+    # ✅ 1m은 DB에서
+    if tf == "1m":
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT t, o, h, l, c, v
+            FROM candles
+            WHERE code=? AND timeframe='1m'
+            ORDER BY t ASC
+        """, (code,))
+        rows = cur.fetchall()
+        conn.close()
+
+        candles = [{
+            "time": r[0],
+            "open": r[1],
+            "high": r[2],
+            "low": r[3],
+            "close": r[4],
+            "volume": r[5],
+        } for r in rows][-count:]
+
+        return jsonify({"code": code, "name": code, "tf": tf, "candles": candles})
+
+    # ✅ 1d/1w/1M은 네이버 그대로
     if tf == "1d":
         n_tf = "day"
     elif tf == "1w":
         n_tf = "week"
     elif tf == "1M":
         n_tf = "month"
-    elif tf == "1m":
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("""
-            SELECT t, o, h, l, c, v
-            FROM candles
-            WHERE code=?
-            ORDER BY t ASC
-        """, (code,))
-        rows = c.fetchall()
-        conn.close()
-
-        candles = [
-            {
-                "time": row[0],
-                "open": row[1],
-                "high": row[2],
-                "low": row[3],
-                "close": row[4],
-                "volume": row[5],
-            }
-            for row in rows
-        ]
-        return jsonify(candles)
-
     else:
         return jsonify({"error": f"unknown tf: {tf}"}), 400
 
     try:
         candles = fetch_naver_stock_candles(code, tf=n_tf, count=min(max(count, 30), 1200))
-        return jsonify({
-            "code": code,
-            "name": code,  # TODO: 종목명 매핑 테이블 붙이면 여기서 채우면 됨
-            "tf": tf,
-            "candles": candles,
-        })
+        return jsonify({"code": code, "name": code, "tf": tf, "candles": candles})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # ---------------------------------------------------------------------
 # Routes
