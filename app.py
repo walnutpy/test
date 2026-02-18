@@ -18,14 +18,7 @@ app = Flask(__name__)
 
 DB_PATH = "candles.db"
 PUSH_TOKEN = os.environ.get("PUSH_TOKEN")
-if not PUSH_TOKEN:
-    raise RuntimeError("PUSH_TOKEN not set")
 
-DB_PATH = os.environ.get("CANDLES_DB_PATH", "candles.db")
-
-PUSH_TOKEN = os.environ.get("PUSH_TOKEN")
-if not PUSH_TOKEN:
-    raise RuntimeError("PUSH_TOKEN not set")
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -43,10 +36,27 @@ def init_db():
             PRIMARY KEY (code, timeframe, t)
         )
     """)
+    
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS subscriptions (
+            code TEXT PRIMARY KEY,
+            enabled INTEGER NOT NULL DEFAULT 1,
+            updated_at TEXT NOT NULL
+        )
+    """)
+    
     conn.commit()
     conn.close()
 
 init_db()
+
+
+
+def _require_push_token():
+    token = request.headers.get("X-PUSH-TOKEN", "")
+    if token != PUSH_TOKEN:
+        return jsonify({"error": "Unauthorized"}), 403
+    return None
 
 
 # ---------------------------------------------------------------------
@@ -505,6 +515,63 @@ def api_stocks_search():
 
     return jsonify({"items": items})
 
+@app.post("/api/subscribe")
+def api_subscribe():
+    payload = request.get_json(silent=True) or {}
+    code = (payload.get("code") or "").strip()
+
+    if not re.fullmatch(r"\d{6}", code):
+        return jsonify({"error": "code must be 6 digits"}), 400
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT OR REPLACE INTO subscriptions (code, enabled, updated_at)
+        VALUES (?, 1, ?)
+    """, (code, datetime.now().isoformat(timespec="seconds")))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"ok": True, "code": code})
+
+
+@app.post("/api/unsubscribe")
+def api_unsubscribe():
+    payload = request.get_json(silent=True) or {}
+    code = (payload.get("code") or "").strip()
+
+    if not re.fullmatch(r"\d{6}", code):
+        return jsonify({"error": "code must be 6 digits"}), 400
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("DELETE FROM subscriptions WHERE code=?", (code,))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"ok": True, "code": code})
+
+@app.get("/api/internal/subscriptions")
+def api_internal_subscriptions():
+    auth = _require_push_token()
+    if auth:
+        return auth
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT code
+        FROM subscriptions
+        WHERE enabled=1
+        ORDER BY updated_at DESC
+        LIMIT 200
+    """)
+    rows = cur.fetchall()
+    conn.close()
+
+    return jsonify({"codes": [r[0] for r in rows]})
+
+
 @app.post("/api/internal/push/candles")
 def push_candles():
     token = request.headers.get("X-PUSH-TOKEN", "")
@@ -710,40 +777,6 @@ def api_calendar_delete(date: str, event_id: str):
 
     _save_calendar(data)
     return jsonify({"ok": True})
-
-@app.route("/api/internal/push/candles", methods=["POST"])
-def push_candles():
-    token = request.headers.get("X-PUSH-TOKEN")
-    if token != PUSH_TOKEN:
-        return {"error": "Unauthorized"}, 403
-
-    data = request.json
-    code = data.get("code")
-    candles = data.get("candles", [])
-
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-
-    for candle in candles:
-        c.execute("""
-            INSERT OR REPLACE INTO candles
-            (code, timeframe, t, o, h, l, c, v)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            code,
-            "1m",
-            candle["t"],
-            candle["o"],
-            candle["h"],
-            candle["l"],
-            candle["c"],
-            candle["v"],
-        ))
-
-    conn.commit()
-    conn.close()
-
-    return {"status": "ok"}
 
 
 # ---------------------------------------------------------------------
