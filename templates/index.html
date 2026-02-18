@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>MAKE MONEYYYYY</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+
+    .layout {
+      height: 100vh;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      gap: 8px;
+      padding: 8px;
+      box-sizing: border-box;
+      background: #f3f4f6;
+    }
+
+    .tl{grid-column: 1/2; grid-row: 1/4;}
+    .tm{grid-column: 2/4; grid-row: 1/3;}
+    .tr{grid-column: 4; grid-row: 1/3;}
+
+    .bl{grid-column: 1; grid-row: 4/5;}
+    .bm{grid-column: 2/4; grid-row: 3/5;}
+    .br{grid-column: 4; grid-row: 3/5;}
+
+    .box {
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .tl.box {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+    }
+
+    .indexCard{
+      padding: 12px;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 8px;
+      border-bottom: 1px solid #eef2f7;
+    }
+    .indexCard:last-child{border-bottom: none;}
+
+    .rowTop{
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-weight: 700;
+    }
+    .valueRow{
+      display: flex;
+      gap: 10px;
+      align-items: baseline;
+      font-family: ui-sans-serif, system-ui;
+    }
+
+    .price{font-size: 20px; font-weight: 800;}
+    .chg{font-size: 14px; opacity: .8;}
+    canvas{width: 100% !important; height: 100% !important;}
+
+    /* NEWS */
+    .newsBox{
+      display:flex;
+      flex-direction:column;
+    }
+    .newsHeader{
+      padding: 12px;
+      border-bottom: 1px solid #eef2f7;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap: 8px;
+    }
+    .newsTitle{ font-weight: 800; }
+    .newsMeta{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      font-size: 12px;
+      opacity: .75;
+      white-space: nowrap;
+    }
+    #newsRefreshBtn{
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      border-radius: 8px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    #newsRefreshBtn:hover{ background:#f9fafb; }
+    .newsList{
+      padding: 8px 10px;
+      overflow:auto;
+      height: 100%;
+    }
+    .newsItem{
+      padding: 10px 8px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .newsItem:last-child{border-bottom:none;}
+    .newsLink{
+      display:block;
+      color: #111827;
+      text-decoration: none;
+      font-weight: 700;
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .newsLink:hover{ text-decoration: underline; }
+    .newsSub{
+      margin-top: 6px;
+      font-size: 12px;
+      opacity: .7;
+      display:flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .newsEmpty{
+      padding: 12px;
+      font-size: 13px;
+      opacity: .7;
+    }
+
+    /* =========================
+       CALENDAR (Phone-like)
+       ========================= */
+
+    .calendarBox{
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      /* 더 크게 쓰고 싶으면 여기 min-height 조절 */
+      min-height: 100%;
+    }
+
+    .calHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid #eef2f7;
+    }
+
+    .calTitle{
+      font-weight: 900;
+      font-size: 20px;
+      letter-spacing: -0.2px;
+    }
+
+    .calBtn{
+      border: 1px solid #e5e7eb;
+      background:#fff;
+      border-radius: 12px;
+      padding: 10px 14px;
+      cursor:pointer;
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .calBtn:hover{ background:#f9fafb; }
+
+    .calWeek{
+      display:grid;
+      grid-template-columns: repeat(7, 1fr);
+      padding: 10px 14px;
+      gap: 6px;
+      font-size: 13px;
+      opacity: .75;
+      user-select: none;
+    }
+
+    .calGrid{
+      display:grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      padding: 0 14px 14px 14px;
+      overflow: auto;
+    }
+
+    .calDay{
+      border: 1px solid #eef2f7;
+      border-radius: 16px;
+      background:#fff;
+      padding: 10px;
+      height: 120px;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-start;
+      gap: 6px;
+      transition: background .12s ease;
+      user-select:none;
+    }
+    .calDay:hover{ background:#f9fafb; }
+    .calDay.dim{opacity:.40;}
+    .calDay .num{ font-weight: 900; font-size: 16px; }
+
+    .calPreview{
+      display:grid;
+      gap: 4px;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .calChip{
+      font-size: 11px;
+      padding: 4px 6px;
+      border-radius: 10px;
+      background:#f3f4f6;
+      border: 1px solid #eef2f7;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .calMore{
+      font-size: 11px;
+      opacity:.65;
+    }
+
+    /* Modal */
+    .calModal.hidden{ display:none; }
+    .calModal{
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .calModalBackdrop{
+      position:absolute;
+      inset:0;
+      background: rgba(0,0,0,.35);
+    }
+    .calModalPanel{
+      position: relative;
+      width: min(560px, 100%);
+      background:#fff;
+      border-radius: 18px;
+      border: 1px solid #eef2f7;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      overflow: hidden;
+    }
+    .calModalHeader{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid #eef2f7;
+    }
+    .calModalLabel{ font-size:12px; opacity:.7; }
+    .calModalDate{ font-size:22px; font-weight:900; }
+    .calModalX{
+      border:none;
+      background:#f3f4f6;
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-weight:800;
+    }
+    .calModalX:hover{ background:#e5e7eb; }
+    .calModalBody{ padding: 14px 16px; }
+
+    .calForm{
+      display:grid;
+      gap: 8px;
+    }
+    .calForm input, .calForm textarea{
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+    }
+    .calForm input:focus, .calForm textarea:focus{
+      box-shadow: 0 0 0 3px rgba(17,24,39,.10);
+    }
+    .calAdd{
+      border: none;
+      background: #111827;
+      color:#fff;
+      border-radius: 12px;
+      padding: 12px 12px;
+      cursor:pointer;
+      font-weight:900;
+      font-size: 14px;
+    }
+    .calAdd:hover{ opacity:.92; }
+
+    .calModalList{
+      margin-top: 12px;
+      max-height: 240px;
+      overflow:auto;
+      border: 1px solid #eef2f7;
+      border-radius: 14px;
+      background:#f9fafb;
+      padding: 10px;
+    }
+
+    .calItem{
+      background:#fff;
+      border: 1px solid #eef2f7;
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .calItem:last-child{ margin-bottom:0; }
+
+    .calItemTop{
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      align-items:flex-start;
+    }
+    .calItemTitle{ font-weight: 900; font-size: 14px; }
+    .calItemNote{ font-size:12px; opacity:.75; margin-top:6px; }
+    .calDel{
+      border:none;
+      background:#f3f4f6;
+      border-radius: 12px;
+      padding: 8px 10px;
+      cursor:pointer;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .calDel:hover{ background:#e5e7eb; }
+
+    #btnGenSum, #btnLoadSum{
+        border: 1px solid #e5e7eb;
+        background:#fff;
+        border-radius:10px;
+        padding: 8px 12px;
+        cursor:pointer;
+        font-weight:800;
+        font-size: 12px;
+    }
+    #btnGenSum:hover, #btnLoadSum:hover{ background:#f9fafb; }
+    #btnGenSum:disabled, #btnLoadSum:disabled{ opacity:.6; cursor:not-allowed; }
+
+    .watchBox{ display:grid; grid-template-rows:auto 1fr; }
+    .watchHeader{
+    padding:12px 14px;
+    border-bottom:1px solid #eef2f7;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    }
+    .watchTitle{ display:flex; flex-direction:column; gap:2px; }
+    #watchName{ font-weight:900; font-size:16px; }
+    .watchSub{ font-size:12px; opacity:.7; }
+
+    .watchControls{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .searchWrap{ position:relative; }
+    #stockSearch{
+    width:280px; max-width:42vw;
+    border:1px solid #e5e7eb;
+    border-radius:10px;
+    padding:8px 10px;
+    outline:none;
+    font-size:13px;
+    }
+    #stockSearch:focus{ box-shadow:0 0 0 3px rgba(17,24,39,.08); }
+
+    .searchDrop{
+    position:absolute;
+    top:38px; left:0;
+    width:100%;
+    background:#fff;
+    border:1px solid #eef2f7;
+    border-radius:12px;
+    box-shadow:0 10px 30px rgba(0,0,0,.08);
+    max-height:260px;
+    overflow:auto;
+    z-index:50;
+    }
+    .searchDrop.hidden{ display:none; }
+    .searchItem{
+    padding:10px 10px;
+    border-bottom:1px solid #f1f5f9;
+    cursor:pointer;
+    }
+    .searchItem:last-child{ border-bottom:none; }
+    .searchItem:hover{ background:#f9fafb; }
+    .searchItem .nm{ font-weight:800; }
+    .searchItem .cd{ font-size:12px; opacity:.7; margin-top:2px; }
+
+    .tfWrap{ display:flex; gap:6px; flex-wrap:wrap; }
+    .tfBtn{
+    border:1px solid #e5e7eb;
+    background:#fff;
+    border-radius:10px;
+    padding:7px 10px;
+    cursor:pointer;
+    font-size:12px;
+    font-weight:800;
+    }
+    .tfBtn.active{ background:#111827; color:#fff; border-color:#111827; }
+
+    .watchBody{ position:relative; }
+    .candleArea{ width:100%; height:100%; }
+    .watchHint{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+    opacity:.6;
+    pointer-events:none;
+    }
+
+    #stockSearchBtn{
+    margin-left:8px;
+    border:1px solid #e5e7eb;
+    background:#111827;
+    color:#fff;
+    border-radius:10px;
+    padding:8px 12px;
+    cursor:pointer;
+    font-size:12px;
+    font-weight:800;
+    }
+    #stockSearchBtn:hover{ opacity:.92; }
+  </style>
+</head>
+
+<body>
+  <div class="layout">
+
+    <!-- COSPI/COSDAQ -->
+    <div class="tl box">
+      <div class="indexCard">
+        <div class="rowTop">
+          <div>코스피</div>
+          <div id="kospiTime" style="opacity:.6;font-size:12px"></div>
+        </div>
+        <div class="valueRow">
+          <div class="price" id="kospiPrice">-</div>
+          <div class="chg" id="kospiChg">-</div>
+        </div>
+        <div><canvas id="kospiChart"></canvas></div>
+      </div>
+
+      <div class="indexCard">
+        <div class="rowTop">
+          <div>코스닥</div>
+          <div id="kosdaqTime" style="opacity:.6;font-size:12px"></div>
+        </div>
+        <div class="valueRow">
+          <div class="price" id="kosdaqPrice">-</div>
+          <div class="chg" id="kosdaqChg">-</div>
+        </div>
+        <div><canvas id="kosdaqChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="tm box watchBox">
+        <div class="watchHeader">
+            <div class="watchTitle">
+                <div id="watchName">관심 종목</div>
+                <div id="watchCode" class="watchSub">-</div>
+                </div>
+
+                <div class="watchControls">
+                <div class="searchWrap">
+                    <input id="stockSearch" placeholder="종목명 또는 6자리 코드 (예: 005930)" autocomplete="off" />
+                    <button id="stockSearchBtn" type="button">검색</button>
+                    <div id="searchDrop" class="searchDrop hidden"></div>
+                </div>
+
+                <div class="tfWrap" id="tfWrap">
+                    <button class="tfBtn" data-tf="1m" type="button">분봉</button>
+                    <button class="tfBtn" data-tf="1d" type="button">일봉</button>
+                    <button class="tfBtn" data-tf="1w" type="button">주봉</button>
+                    <button class="tfBtn" data-tf="1M" type="button">월봉</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="watchBody">
+            <div id="mainCandle" class="candleArea"></div>
+            <div id="watchHint" class="watchHint">종목을 검색해서 선택하면 차트가 표시됩니다.</div>
+        </div>  
+    </div>
+
+    <!-- News -->
+    <div class="tr box newsBox">
+      <div class="newsHeader">
+        <div class="newsTitle">뉴스</div>
+        <div class="newsMeta">
+          <span id="newsTime">-</span>
+          <button id="newsRefreshBtn" type="button">새로고침</button>
+        </div>
+      </div>
+      <div id="newsList" class="newsList">
+        <div class="newsEmpty">불러오는 중...</div>
+      </div>
+    </div>
+    <div class="bl box" style="display:flex;align-items:center;justify-content:center;font-weight:700;">뭐 넣지</div>
+    <!-- for my mind -->
+    <div class="bm box" style="padding:14px; display:flex; flex-direction:column; gap:10px; overflow:hidden;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+            <div style="font-weight:900; font-size:16px;">오늘 하루 뉴스 요약</div>
+
+            <div style="display:flex; gap:8px;">
+            <button id="btnGenSum" type="button">뉴스 요약하기</button>
+            <button id="btnLoadSum" type="button">저장본 보기</button>
+            </div>
+        </div>
+
+        <div id="sumMeta" style="font-size:12px; opacity:.7;">준비됨</div>
+
+        <div id="sumBox" style="
+            flex:1;
+            overflow:auto;
+            background:#f9fafb;
+            border-radius:12px;
+            padding:12px;
+            white-space:pre-wrap;
+            line-height:1.6;
+            font-size:13.5px;
+        ">📌 여기에 요약이 표시됩니다.</div>
+    </div>
+
+    <!-- Calendar (fixed) -->
+    <div class="br box calendarBox">
+      <div class="calHeader">
+        <button class="calBtn" id="calPrev" type="button">◀</button>
+        <div class="calTitle" id="calTitle">-</div>
+        <button class="calBtn" id="calNext" type="button">▶</button>
+      </div>
+
+      <div class="calWeek">
+        <div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div><div>일</div>
+      </div>
+
+      <div class="calGrid" id="calGrid"></div>
+    </div>
+  </div>
+
+  <!-- Calendar Modal -->
+  <div id="calModal" class="calModal hidden" aria-hidden="true">
+    <div class="calModalBackdrop" id="calModalClose"></div>
+
+    <div class="calModalPanel" role="dialog" aria-modal="true">
+      <div class="calModalHeader">
+        <div>
+          <div class="calModalLabel">선택한 날짜</div>
+          <div class="calModalDate" id="calModalDate">-</div>
+        </div>
+        <button class="calModalX" id="calModalX" type="button">닫기</button>
+      </div>
+
+      <div class="calModalBody">
+        <div class="calForm">
+          <input id="calTitleInput" placeholder="일정 제목 *" />
+          <input id="calTimeInput" placeholder="시간 (예: 09:30)" inputmode="numeric" />
+          <textarea id="calNoteInput" rows="2" placeholder="메모(선택)"></textarea>
+          <button class="calAdd" id="calAddBtn" type="button">일정 추가</button>
+        </div>
+
+        <div class="calModalList" id="calModalList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+
+
+  <script>
+    function fmt(n){
+      if(n===null || n===undefined || Number.isNaN(n)) return "-";
+      return n.toLocaleString("ko-KR",{maximumFractionDigits: 2});
+    }
+
+    function makeChart(ctx){
+      return new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: [],
+          datasets: [{
+            data: [],
+            tension: 0.25,
+            pointRadius: 3,
+            pointHoverRadius: 6,
+            borderWidth: 2
+          }]
+        },
+        options:{
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { display: false }, y: { display:false } }
+        }
+      });
+    }
+
+    const kospiChart = makeChart(document.getElementById("kospiChart"));
+    const kosdaqChart = makeChart(document.getElementById("kosdaqChart"));
+
+    async function refreshCurrent(){
+      const r = await fetch("/api/index/current");
+      const data = await r.json();
+
+      const k = data.KOSPI;
+      document.getElementById("kospiPrice").textContent = fmt(k.price);
+      document.getElementById("kospiChg").textContent = `${fmt(k.change)} (${fmt(k.changeRate)}%)`;
+
+      const q = data.KOSDAQ;
+      document.getElementById("kosdaqPrice").textContent = fmt(q.price);
+      document.getElementById("kosdaqChg").textContent = `${fmt(q.change)} (${fmt(q.changeRate)}%)`;
+
+      const now = new Date();
+      const t = now.toLocaleTimeString("ko-KR", {hour: "2-digit", minute: "2-digit"});
+      document.getElementById("kospiTime").textContent = t;
+      document.getElementById("kosdaqTime").textContent = t;
+    }
+
+    async function refreshMinute(){
+      const r = await fetch("/api/index/minute");
+      const data = await r.json();
+
+      function apply(chart, series){
+        const pts = series.points || [];
+        pts.sort((a,b)=>(a.t>b.t ? 1: -1));
+
+        chart.data.labels = pts.map(p=>p.t);
+        chart.data.datasets[0].data = pts.map(p=>p.v);
+        chart.update();
+      }
+      apply(kospiChart, data.KOSPI);
+      apply(kosdaqChart, data.KOSDAQ);
+    }
+
+    async function refreshNews(){
+      const list = document.getElementById("newsList");
+      const timeEl = document.getElementById("newsTime");
+
+      try{
+        const r = await fetch("/api/news", { cache: "no-store" });
+        const data = await r.json();
+
+        const items = data.items || [];
+        list.innerHTML = "";
+
+        if(items.length === 0){
+          list.innerHTML = `<div class="newsEmpty">표시할 뉴스가 없습니다.</div>`;
+        } else {
+          for(const n of items){
+            const div = document.createElement("div");
+            div.className = "newsItem";
+
+            const press = n.press ?? "";
+            const ts = n.ts ?? "";
+
+            div.innerHTML = `
+              <a class="newsLink" href="${n.link}" target="_blank" rel="noopener">
+                ${escapeHtml(n.title)}
+              </a>
+              <div class="newsSub">
+                <span>${escapeHtml(press)}</span>
+                <span>${escapeHtml(ts)}</span>
+              </div>
+            `;
+            list.appendChild(div);
+          }
+        }
+
+        const now = new Date();
+        timeEl.textContent = now.toLocaleTimeString("ko-KR", {hour:"2-digit", minute:"2-digit"});
+      }catch(e){
+        console.error(e);
+        list.innerHTML = `<div class="newsEmpty">뉴스를 불러오지 못했습니다.</div>`;
+      }
+    }
+
+    // 간단 XSS 방지
+    function escapeHtml(s){
+      return String(s ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    document.getElementById("newsRefreshBtn").addEventListener("click", refreshNews);
+
+    async function refreshALL(){
+      try{
+        await refreshCurrent();
+        await refreshMinute();
+        await refreshNews();
+      }catch(e){
+        console.error(e);
+      }
+    }
+
+    refreshALL();
+    setInterval(refreshALL, 30000);
+
+    /* =========================
+       CALENDAR (Modal add)
+       ========================= */
+
+    const cal = {
+      cursor: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+      selected: new Date(),
+      eventsByDate: {}, // {"YYYY-MM-DD":[{id,title,time,note},...]}
+    };
+
+    function pad2(n){ return String(n).padStart(2,"0"); }
+    function toKey(d){
+      return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+    }
+    function monthKey(d){
+      return `${d.getFullYear()}-${pad2(d.getMonth()+1)}`;
+    }
+    function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+    function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0); }
+    function addMonths(d, delta){ return new Date(d.getFullYear(), d.getMonth()+delta, 1); }
+
+    function normTime(s){
+      s = String(s||"").trim();
+      if(!s) return "";
+      const m = /^([0-2]?\d):([0-5]\d)$/.exec(s);
+      if(!m) return "";
+      const hh = Math.min(23, Math.max(0, Number(m[1])));
+      const mm = Math.min(59, Math.max(0, Number(m[2])));
+      return `${pad2(hh)}:${pad2(mm)}`;
+    }
+
+    async function fetchMonthEvents(){
+      const m = monthKey(cal.cursor);
+      const r = await fetch(`/api/calendar/events?month=${m}`, { cache:"no-store" });
+      const data = await r.json();
+      cal.eventsByDate = data.items || {};
+    }
+
+    function renderCalendar(){
+      document.getElementById("calTitle").textContent =
+        `${cal.cursor.getFullYear()}년 ${cal.cursor.getMonth()+1}월`;
+
+      const s = startOfMonth(cal.cursor);
+      const e = endOfMonth(cal.cursor);
+
+      // 월요일 시작
+      const startDow = s.getDay(); // 0=일..6=토
+      const offset = (startDow===0) ? 6 : startDow-1; // 월=0..일=6
+
+      const gridStart = new Date(s);
+      gridStart.setDate(s.getDate() - offset);
+
+      const grid = document.getElementById("calGrid");
+      grid.innerHTML = "";
+
+      for(let i=0;i<42;i++){
+        const d = new Date(gridStart);
+        d.setDate(gridStart.getDate()+i);
+
+        const inMonth = (d.getMonth() === cal.cursor.getMonth());
+        const key = toKey(d);
+        const arr = cal.eventsByDate[key] || [];
+
+        const preview = arr.slice(0,2).map(ev=>{
+          const txt = (ev.time ? ev.time + " " : "") + (ev.title || "");
+          return `<div class="calChip">${escapeHtml(txt)}</div>`;
+        }).join("");
+
+        const more = arr.length > 2 ? `<div class="calMore">+${arr.length-2}개 더</div>` : "";
+
+        const btn = document.createElement("div");
+        btn.className = "calDay" + (inMonth ? "" : " dim");
+        btn.innerHTML = `
+          <div class="num">${d.getDate()}</div>
+          <div class="calPreview">
+            ${preview}
+            ${more}
+          </div>
+        `;
+
+        btn.addEventListener("click", ()=>{
+          cal.selected = d;
+          openModal();
+        });
+
+        grid.appendChild(btn);
+      }
+    }
+
+    function openModal(){
+      const m = document.getElementById("calModal");
+      m.classList.remove("hidden");
+      m.setAttribute("aria-hidden","false");
+      document.getElementById("calModalDate").textContent = toKey(cal.selected);
+      renderModalList();
+      // 제목 바로 입력 편하게 포커스
+      setTimeout(()=> document.getElementById("calTitleInput")?.focus(), 0);
+    }
+
+    function closeModal(){
+      const m = document.getElementById("calModal");
+      m.classList.add("hidden");
+      m.setAttribute("aria-hidden","true");
+    }
+
+    document.getElementById("calModalClose").addEventListener("click", closeModal);
+    document.getElementById("calModalX").addEventListener("click", closeModal);
+    window.addEventListener("keydown", (e)=>{ if(e.key==="Escape") closeModal(); });
+
+    function renderModalList(){
+      const key = toKey(cal.selected);
+      const list = document.getElementById("calModalList");
+      const arr = cal.eventsByDate[key] || [];
+      list.innerHTML = "";
+
+      if(arr.length===0){
+        list.innerHTML = `<div class="newsEmpty">일정이 없습니다.</div>`;
+        return;
+      }
+
+      for(const ev of arr){
+        const div = document.createElement("div");
+        div.className = "calItem";
+        const title = (ev.time ? `${ev.time} ` : "") + (ev.title || "");
+        div.innerHTML = `
+          <div class="calItemTop">
+            <div class="calItemTitle">${escapeHtml(title)}</div>
+            <button class="calDel" type="button">삭제</button>
+          </div>
+          ${ev.note ? `<div class="calItemNote">${escapeHtml(ev.note)}</div>` : ``}
+        `;
+
+        div.querySelector(".calDel").addEventListener("click", async ()=>{
+          const dateKey = key;
+          await fetch(`/api/calendar/events/${dateKey}/${ev.id}`, { method:"DELETE" });
+          await fetchMonthEvents();
+          renderCalendar();
+          renderModalList();
+        });
+
+        list.appendChild(div);
+      }
+    }
+
+    async function addEvent(){
+      const title = document.getElementById("calTitleInput").value.trim();
+      const time = normTime(document.getElementById("calTimeInput").value);
+      const note = document.getElementById("calNoteInput").value.trim();
+
+      if(!title){
+        alert("제목은 필수야!");
+        return;
+      }
+
+      const body = {
+        date: toKey(cal.selected),
+        title,
+        time,
+        note,
+      };
+
+      await fetch("/api/calendar/events", {
+        method: "POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify(body),
+      });
+
+      document.getElementById("calTitleInput").value = "";
+      document.getElementById("calTimeInput").value = "";
+      document.getElementById("calNoteInput").value = "";
+
+      await fetchMonthEvents();
+      renderCalendar();
+      renderModalList();
+    }
+
+    document.getElementById("calAddBtn").addEventListener("click", addEvent);
+
+    document.getElementById("calPrev").addEventListener("click", async ()=>{
+      cal.cursor = addMonths(cal.cursor, -1);
+      await fetchMonthEvents();
+      renderCalendar();
+    });
+
+    document.getElementById("calNext").addEventListener("click", async ()=>{
+      cal.cursor = addMonths(cal.cursor, 1);
+      await fetchMonthEvents();
+      renderCalendar();
+    });
+
+    (async function initCalendar(){
+      cal.cursor = startOfMonth(new Date());
+      cal.selected = new Date();
+      await fetchMonthEvents();
+      renderCalendar();
+    })();
+
+    async function generateSummary(){
+    const meta = document.getElementById("sumMeta");
+    const box = document.getElementById("sumBox");
+
+    meta.textContent = "⏳ 요약 생성 중...";
+    box.textContent = "⏳ 뉴스 요약 생성 중...";
+
+    try{
+      const r = await fetch("/api/news/summary", { cache:"no-store" });
+      const data = await r.json();
+      if(!r.ok) throw new Error(data.error || ("HTTP " + r.status));
+
+      meta.textContent = `✅ 생성 완료 · ${data.date} · ${data.generatedAt}`;
+      box.textContent = data.summary || "⚠ 요약이 비어있습니다.";
+    }catch(e){
+      meta.textContent = "❌ 생성 실패";
+      box.textContent = "에러: " + e.message;
+        }
+    }
+
+    async function loadSummary(){
+        const meta = document.getElementById("sumMeta");
+        const box = document.getElementById("sumBox");
+
+        meta.textContent = "📂 저장본 불러오는 중...";
+        box.textContent = "📂 불러오는 중...";
+
+        try{
+        const r = await fetch("/api/news/summary/latest", { cache:"no-store" });
+
+        if(r.status === 404){
+            meta.textContent = "ℹ 저장본 없음";
+            box.textContent = "아직 저장된 요약이 없습니다. '뉴스 요약하기'를 먼저 눌러주세요.";
+            return;
+        }
+
+        const data = await r.json();
+        if(!r.ok) throw new Error(data.error || ("HTTP " + r.status));
+
+        meta.textContent = `✅ 저장본 · ${data.date} · ${data.generatedAt}`;
+        box.textContent = data.summary || "⚠ 저장된 요약이 비어있습니다.";
+        }catch(e){
+        meta.textContent = "❌ 불러오기 실패";
+        box.textContent = "에러: " + e.message;
+        }
+    }
+
+    document.getElementById("btnGenSum").addEventListener("click", generateSummary);
+    document.getElementById("btnLoadSum").addEventListener("click", loadSummary);
+  </script>
+    <script>
+    /* =========================
+        WATCHLIST CHART (single symbol)
+        ========================= */
+
+    const state = {
+        code: null,
+        name: null,
+        tf: "1d", // default
+        chart: null,
+        series: null,
+        refreshTimer: null,
+    };
+
+    function setActiveTf(tf){
+        state.tf = tf;
+        document.querySelectorAll(".tfBtn").forEach(b=>{
+        b.classList.toggle("active", b.dataset.tf === tf);
+        });
+    }
+
+    function initCandle(){
+        const el = document.getElementById("mainCandle");
+        const hint = document.getElementById("watchHint");
+
+        state.chart = LightweightCharts.createChart(el, {
+        width: el.clientWidth,
+        height: el.clientHeight,
+        layout: { background: { type: "solid", color: "white" }, textColor: "#111827" },
+        grid: { vertLines: { color: "#f1f5f9" }, horzLines: { color: "#f1f5f9" } },
+        timeScale: { timeVisible: true, secondsVisible: false },
+        rightPriceScale: { borderColor: "#eef2f7" },
+        crosshair: { mode: 1 },
+        });
+
+        state.series = state.chart.addCandlestickSeries();
+
+        // resize
+        const ro = new ResizeObserver(()=> {
+        state.chart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
+        });
+        ro.observe(el);
+
+        // 처음엔 힌트 보이게
+        hint.style.display = "flex";
+    }
+
+    async function loadCandles(){
+        const hint = document.getElementById("watchHint");
+        if(!state.code) return;
+
+        hint.style.display = "none";
+
+        const r = await fetch(`/api/stocks/candles?code=${encodeURIComponent(state.code)}&tf=${encodeURIComponent(state.tf)}&count=300`, { cache:"no-store" });
+        const data = await r.json();
+        if(!r.ok) {
+        hint.textContent = "차트 로딩 실패: " + (data.error || ("HTTP " + r.status));
+        hint.style.display = "flex";
+        return;
+        }
+
+        document.getElementById("watchName").textContent = data.name || state.name || "관심 종목";
+        document.getElementById("watchCode").textContent = `${data.code || state.code} · ${data.tf || state.tf}`;
+
+        // lightweight-charts 포맷: [{ time: "YYYY-MM-DD", open, high, low, close }]
+        state.series.setData((data.candles || []).map(c => ({
+        time: c.time,
+        open: c.open,
+        high: c.high,
+        low: c.low,
+        close: c.close,
+        })));
+    }
+
+    function startAutoRefresh(){
+        if(state.refreshTimer) clearInterval(state.refreshTimer);
+
+        // 분봉/틱봉은 실시간성이 중요하니 더 자주, 일/주/월은 30초(혹은 60초)도 충분
+        const ms = (state.tf === "1m" || state.tf === "tick") ? 5000 : 30000;
+        state.refreshTimer = setInterval(loadCandles, ms);
+    }
+
+    // --- Search UI
+    function showDrop(items){
+        const drop = document.getElementById("searchDrop");
+        if(!items || items.length === 0){
+        drop.innerHTML = `<div class="searchItem"><div class="nm">검색 결과 없음</div></div>`;
+        drop.classList.remove("hidden");
+        return;
+        }
+
+        drop.innerHTML = "";
+        for(const it of items){
+        const div = document.createElement("div");
+        div.className = "searchItem";
+        div.innerHTML = `<div class="nm">${escapeHtml(it.name)}</div><div class="cd">${escapeHtml(it.code)}</div>`;
+        div.addEventListener("click", async ()=>{
+            state.code = it.code;
+            state.name = it.name;
+            document.getElementById("stockSearch").value = `${it.name} (${it.code})`;
+            drop.classList.add("hidden");
+            await loadCandles();
+            startAutoRefresh();
+        });
+        drop.appendChild(div);
+        }
+        drop.classList.remove("hidden");
+    }
+
+    function escapeHtml(s){
+    return String(s ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function extract6Digits(v){
+    v = (v || "").trim();
+    const m = v.match(/(\d{6})/); // "KRX-069500" 같은 것도 069500 뽑아줌
+    return m ? m[1] : null;
+    }
+
+    async function doSearch(q){
+    q = (q || "").trim();
+    const drop = document.getElementById("searchDrop");
+
+    if(q.length < 1){
+        drop.classList.add("hidden");
+        return;
+    }
+
+    const r = await fetch(`/api/stocks/search?q=${encodeURIComponent(q)}`, { cache:"no-store" });
+    const data = await r.json();
+    showDrop(data.items || []);
+    }
+
+    // ✅ 엔터/버튼 눌렀을 때만 동작
+    async function submitSearch(){
+    const input = document.getElementById("stockSearch");
+    const q = input.value.trim();
+    const code = extract6Digits(q);
+
+    // 1) 6자리 코드면 바로 차트 로딩
+    if(code){
+        state.code = code;
+        state.name = null;
+        await loadCandles();
+        startAutoRefresh();
+        return;
+    }
+
+    // 2) 아니면 종목명 검색 -> 드롭다운
+    await doSearch(q);
+    }
+
+    function wireWatchEvents(){
+    // timeframe buttons
+    document.getElementById("tfWrap").addEventListener("click", async (e)=>{
+        const btn = e.target.closest(".tfBtn");
+        if(!btn) return;
+        setActiveTf(btn.dataset.tf);
+        await loadCandles();
+        startAutoRefresh();
+    });
+
+    const input = document.getElementById("stockSearch");
+    const btn = document.getElementById("stockSearchBtn");
+
+    // ✅ 엔터로 검색(코드면 차트 / 아니면 드롭)
+    input.addEventListener("keydown", (e)=>{
+        if(e.key !== "Enter") return;
+        e.preventDefault();
+        submitSearch();
+    });
+
+    // ✅ 버튼으로 검색
+    if(btn){
+        btn.addEventListener("click", submitSearch);
+    }
+
+    // 바깥 클릭하면 드롭 닫기
+    document.addEventListener("click", (e)=>{
+        const drop = document.getElementById("searchDrop");
+        if(!drop || drop.classList.contains("hidden")) return;
+        if(e.target.closest(".searchWrap")) return;
+        drop.classList.add("hidden");
+    });
+    }
+    // init
+    initCandle();
+    wireWatchEvents();
+    setActiveTf("1d");
+    </script>
+
+</body>
+</html>
