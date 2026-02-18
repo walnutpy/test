@@ -17,7 +17,9 @@ import sqlite3
 app = Flask(__name__)
 
 DB_PATH = "candles.db"
-PUSH_TOKEN = "여기에_긴랜덤토큰_32자이상"
+PUSH_TOKEN = os.environ.get("PUSH_TOKEN")
+if not PUSH_TOKEN:
+    raise RuntimeError("PUSH_TOKEN not set")
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)

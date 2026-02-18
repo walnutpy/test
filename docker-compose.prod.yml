@@ -5,6 +5,7 @@ services:
     image: ${IMAGE_REF}
     environment: # <- 매핑 형식
       FLASK_ENV: production
+      PUSH_TOKEN: ${PUSH_TOKEN}
     expose:
       - "5000"
     restart: unless-stopped

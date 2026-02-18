@@ -15,6 +15,8 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Build & start services
+        env:
+          PUSH_TOKEN: ${{ secrets.PUSH_TOKEN }}
         run: |
           docker compose up -d --build
           # give the app a moment to start
