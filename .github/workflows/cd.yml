@@ -294,6 +294,7 @@ jobs:
             cd '${{ env.REMOTE_DIR }}' &&
             docker compose -f docker-compose.prod.yml pull &&
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose -f docker-compose.prod.yml up -d --force-recreate nginx
           "
 
       # ── 10. HTTPS 검증 ──────────────────────────────────────────────────

@@ -607,6 +607,8 @@ def push_candles():
     conn.close()
     return jsonify({"status": "ok"})
 
+def iso_to_epoch_seconds(t: str) -> int:
+    return int(datetime.fromisoformat(t).timestamp())
 
 @app.get("/api/stocks/candles")
 def api_stocks_candles():
@@ -631,7 +633,7 @@ def api_stocks_candles():
         conn.close()
 
         candles = [{
-            "time": r[0],
+            "time": iso_to_epoch_seconds(r[0]),
             "open": r[1],
             "high": r[2],
             "low": r[3],
